@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { DataList, DataListChild, Inputs } from "../utils/dataList";
+import { DataList, Inputs } from "../utils/dataList";
 import { Button, Form, Input, Modal, TreeSelect, message } from "antd";
 import { generateDataTree } from "../utils/myFunction";
 import { BaseOptionType } from "antd/es/select";
@@ -13,6 +13,45 @@ interface Props {
   dataParent: DataList[];
 }
 
+interface DataListSelect extends DataList {
+  disabled?: boolean;
+}
+
+export interface DataListChildSelect extends DataListSelect {
+  children?: DataListChildSelect[];
+}
+
+const recursiveData = (dataArr: DataListChildSelect[]): BaseOptionType[] => {
+  return dataArr.map((item) => {
+    if (item.children) {
+      return {
+        label: item.name,
+        value: item.id,
+        disabled: item.disabled,
+        children: recursiveData(item.children),
+      };
+    }
+
+    return {
+      label: item.name,
+      value: item.id,
+      disabled: item.disabled,
+    };
+  });
+};
+
+const generateList = (date: DataListSelect[]) => {
+  const dataTree = generateDataTree<DataListChildSelect, DataListSelect>(
+    date,
+    "parent_id",
+    "id"
+  );
+
+  const finalData = recursiveData(dataTree);
+
+  return finalData;
+};
+
 const ModalInput = ({
   visisble,
   onClose,
@@ -23,33 +62,29 @@ const ModalInput = ({
   const [form] = Form.useForm<Omit<DataList, "id">>();
 
   const newParentList = useMemo(() => {
-    const dataTree = generateDataTree<DataListChild, DataList>(
-      dataParent,
-      "parent_id",
-      "id"
-    );
-
-    const recursiveData = (dataArr: DataListChild[]): BaseOptionType[] => {
-      return dataArr.map((item) => {
-        if (item.children) {
+    const newVal = dataParent.map((val) => {
+      if (record) {
+        if (val.id === record.id) {
           return {
-            label: item.name,
-            value: item.id,
-            children: recursiveData(item.children),
+            ...val,
+            disabled: true,
           };
         }
+      }
 
-        return {
-          label: item.name,
-          value: item.id,
-        };
-      });
-    };
+      return val;
+    });
 
-    const finalData = recursiveData(dataTree);
+    const master = generateList(newVal);
 
-    return finalData;
-  }, [dataParent]);
+    return [
+      {
+        label: "Top Parent",
+        value: null,
+      },
+      ...master,
+    ];
+  }, [dataParent, record]);
 
   const onSubmit = (dataSubmit: Omit<DataList, "id">) => {
     const { name, description, parent_id } = dataSubmit;
@@ -59,13 +94,21 @@ const ModalInput = ({
         return;
       }
 
-      onFinish({ type: "update", id: record.id, name, description, parent_id });
+      onFinish({
+        type: "update",
+        id: record.id,
+        name,
+        description,
+        parent_id: parent_id || null,
+      });
       onClose();
+      form.resetFields();
       return;
     }
 
-    onFinish({ type: "add", name, description, parent_id });
+    onFinish({ type: "add", name, description, parent_id: parent_id || null });
     onClose();
+    form.resetFields();
   };
 
   const onError = (errorSubmit: any) => {

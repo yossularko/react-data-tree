@@ -6,7 +6,7 @@ export interface DataList {
 }
 
 export interface DataListChild extends DataList {
-  children?: DataList[];
+  children?: DataListChild[];
 }
 
 export type Inputs =
