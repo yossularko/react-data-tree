@@ -80,7 +80,7 @@ const ModalInput = ({
     return [
       {
         label: "Top Parent",
-        value: null,
+        value: "",
       },
       ...master,
     ];
