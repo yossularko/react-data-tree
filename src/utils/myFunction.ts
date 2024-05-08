@@ -2,7 +2,8 @@ const recursiveDataTree = <T, D>(
   dataChild: any[],
   dataParent: any[],
   selectField: keyof D,
-  idField: keyof D
+  idField: keyof D,
+  historyFromParent: string[]
 ): T[] => {
   return dataChild.map((item) => {
     const child = dataParent.filter(
@@ -10,12 +11,16 @@ const recursiveDataTree = <T, D>(
     );
 
     if (child.length === 0) {
-      return item;
+      return { ...item, history: historyFromParent };
     }
 
     return {
       ...item,
-      children: recursiveDataTree(child, dataParent, selectField, idField),
+      history: historyFromParent,
+      children: recursiveDataTree(child, dataParent, selectField, idField, [
+        ...historyFromParent,
+        item[idField],
+      ]),
     };
   });
 };
@@ -31,7 +36,7 @@ const generateDataTree = <T, D>(
   data: any[],
   selectField: keyof D, // parent_id
   idField: keyof D // id
-): T[] => {
+): (T & { history: string[]; unknowParent?: string })[] => {
   if (data.length === 0) {
     return [];
   }
@@ -80,15 +85,17 @@ const generateDataTree = <T, D>(
       );
 
       if (children.length === 0) {
-        acc.push(curr);
+        acc.push({ ...curr, history: [] });
       } else {
         acc.push({
           ...curr,
+          history: [],
           children: recursiveDataTree(
             children,
             validData,
             selectField,
-            idField
+            idField,
+            [curr[idField]]
           ),
         });
       }
@@ -99,18 +106,18 @@ const generateDataTree = <T, D>(
   return reduced;
 };
 
-const generateDataFlat = (dataArr: any[]) => {
+const generateDataFlat = <T>(dataArr: T[]) => {
   return dataArr.reduce((acc, curr) => {
-    const { children, ...rest } = curr;
+    const { children, ...rest } = curr as any;
     if (children) {
-      const next = generateDataFlat(children);
+      const next: any = generateDataFlat(children);
       acc.push(rest, ...next);
     } else {
       acc.push(curr);
     }
 
     return acc;
-  }, [] as any[]);
+  }, [] as T[]);
 };
 
 export { generateDataTree, generateDataFlat };

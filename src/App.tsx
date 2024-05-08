@@ -25,7 +25,7 @@ function App() {
   }, [data]);
 
   const dataFlat = useMemo(() => {
-    const newVal = generateDataFlat(dataTree) as DataList[];
+    const newVal = generateDataFlat(dataTree);
     return newVal;
   }, [dataTree]);
 
