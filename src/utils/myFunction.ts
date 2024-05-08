@@ -32,11 +32,11 @@ const checkDuplicateArr = (input_array: (number | string)[]) => {
   return Array.from(new Set(duplicates));
 };
 
-const generateDataTree = <T, D>(
+const checkValidDataTree = <D>(
   data: any[],
-  selectField: keyof D, // parent_id
-  idField: keyof D // id
-): (T & { history: string[]; unknowParent?: string })[] => {
+  selectField: keyof D,
+  idField: keyof D
+) => {
   if (data.length === 0) {
     return [];
   }
@@ -76,6 +76,16 @@ const generateDataTree = <T, D>(
     );
     return { ...val, [val[selectField]]: null, unknowParent: val[selectField] };
   });
+
+  return validData
+};
+
+const generateDataTree = <T, D>(
+  data: any[],
+  selectField: keyof D, // parent_id
+  idField: keyof D // id
+): (T & { history: string[]; unknowParent?: string })[] => {
+  const validData = checkValidDataTree<D>(data, selectField, idField);
 
   const reduced = validData
     .filter((item) => item[selectField] === null)
